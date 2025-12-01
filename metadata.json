@@ -1,0 +1,5 @@
+{
+  "name": "Anymovie",
+  "description": "Anymovie is a Netflix-inspired streaming interface with client-side search and custom list management.",
+  "requestFramePermissions": []
+}

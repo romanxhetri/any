@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
-import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import Row from './components/Row';
-import Modal from './components/Modal';
-import AddMovieModal from './components/AddMovieModal';
-import Player from './components/Player';
-import { MOCK_HERO_MOVIE, INITIAL_CATEGORIES } from './constants';
-import { Movie, ViewState } from './types';
+import Navbar from './components/Navbar.tsx';
+import Hero from './components/Hero.tsx';
+import Row from './components/Row.tsx';
+import Modal from './components/Modal.tsx';
+import AddMovieModal from './components/AddMovieModal.tsx';
+import Player from './components/Player.tsx';
+import { MOCK_HERO_MOVIE, INITIAL_CATEGORIES } from './constants.ts';
+import { Movie, ViewState } from './types.ts';
 import { Loader2 } from 'lucide-react';
 
 function App() {

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Play, Plus, ThumbsUp, ChevronDown } from 'lucide-react';
-import { Movie } from '../types';
+import { Movie } from '../types.ts';
 
 interface MovieCardProps {
   movie: Movie;

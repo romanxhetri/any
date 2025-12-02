@@ -1,8 +1,8 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import MovieCard from './MovieCard';
-import { Movie } from '../types';
+import MovieCard from './MovieCard.tsx';
+import { Movie } from '../types.ts';
 
 interface RowProps {
   title: string;

@@ -1,4 +1,5 @@
-import { Movie, Category } from './types';
+
+import { Movie, Category } from './types.ts';
 
 // Helper to generate a consistent image URL
 const getImg = (id: string, width = 600, height = 400) => `https://picsum.photos/seed/${id}/${width}/${height}`;

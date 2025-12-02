@@ -1,5 +1,5 @@
 
-import { Movie } from "../types";
+import { Movie } from "../types.ts";
 
 // This file formerly contained AI logic. 
 // It is kept as a placeholder to prevent import errors if referenced, 

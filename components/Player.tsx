@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { Movie } from '../types';
+import { Movie } from '../types.ts';
 
 interface PlayerProps {
   movie: Movie;

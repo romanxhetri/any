@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Search, Bell, User, PlusCircle, Menu, X } from 'lucide-react';
-import { ViewState } from '../types';
+import { ViewState } from '../types.ts';
 
 interface NavbarProps {
   setViewState: (view: ViewState) => void;

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { Movie } from '../types';
+import { Movie } from '../types.ts';
 
 interface AddMovieModalProps {
   onClose: () => void;

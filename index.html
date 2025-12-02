@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -52,7 +51,7 @@
         background-color: #141414;
         /* Cinematic background with dark overlay */
         background-image: 
-          linear-gradient(to bottom, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)),
+          linear-gradient(to bottom, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7)),
           url('https://wallpapers.com/images/hd/scenic-mountain-and-lake-landscape-during-sunset-1c28-1080-692-0-0.jpg');
         background-size: cover;
         background-attachment: fixed;
@@ -105,7 +104,909 @@
 </head>
   <body>
     <div id="root"></div>
-    <!-- Load the main entry point with Babel type -->
-    <script type="text/babel" data-type="module" src="./index.tsx"></script>
+
+    <!-- MAIN APPLICATION SCRIPT -->
+    <!-- Consolidating logic to ensure static deployment works without build steps -->
+    <script type="text/babel" data-type="module" data-presets="react,typescript">
+      import React, { useState, useEffect, useRef } from 'react';
+      import ReactDOM from 'react-dom/client';
+      import { Search, Bell, User, PlusCircle, Menu, X, Play, Info, Plus, ThumbsUp, ChevronDown, ChevronLeft, ChevronRight, Loader2, ArrowLeft } from 'lucide-react';
+
+      // --- CONSTANTS & TYPES ---
+      
+      // Removed 'export' keyword and changed enum to const object for better runtime compatibility
+      const ViewState = {
+        HOME: 'HOME',
+        SEARCH: 'SEARCH',
+        PLAYER: 'PLAYER',
+        PROFILES: 'PROFILES'
+      };
+
+      interface Movie {
+        id: string;
+        title: string;
+        description: string;
+        thumbnailUrl: string;
+        videoUrl?: string;
+        embedUrl?: string;
+        imdbId?: string;
+        genre: string[];
+        matchScore: number;
+        year: number;
+        rating: string;
+        duration: string;
+        type?: 'movie' | 'series';
+      }
+
+      interface Category {
+        title: string;
+        movies: Movie[];
+      }
+
+      const getImg = (id, width = 600, height = 400) => `https://picsum.photos/seed/${id}/${width}/${height}`;
+      const SAMPLE_VIDEO_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+      const SAMPLE_VIDEO_URL_2 = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4";
+
+      const MOCK_HERO_MOVIE = {
+        id: 'hero-1',
+        title: 'Cyberpunk: Edgerunners',
+        description: 'In a dystopia riddled with corruption and cybernetic implants, a talented but reckless street kid strives to become a mercenary outlaw — an edgerunner.',
+        thumbnailUrl: getImg('cyberpunk', 1920, 1080),
+        videoUrl: SAMPLE_VIDEO_URL,
+        genre: ['Sci-Fi', 'Anime', 'Action'],
+        matchScore: 98,
+        year: 2022,
+        rating: 'TV-MA',
+        duration: '1 Season',
+        type: 'series'
+      };
+
+      const generateMockMovies = (category, count) => {
+        return Array.from({ length: count }).map((_, i) => ({
+          id: `${category}-${i}`,
+          title: `${category} Movie ${i + 1}`,
+          description: `This is a thrilling description for ${category} Movie ${i + 1}. It has action, drama, and suspense.`,
+          thumbnailUrl: getImg(`${category}${i}`),
+          videoUrl: i % 2 === 0 ? SAMPLE_VIDEO_URL : SAMPLE_VIDEO_URL_2,
+          genre: [category, 'Drama'],
+          matchScore: 85 + Math.floor(Math.random() * 15),
+          year: 2020 + Math.floor(Math.random() * 4),
+          rating: Math.random() > 0.5 ? 'TV-MA' : 'PG-13',
+          duration: `${90 + Math.floor(Math.random() * 60)}m`,
+          type: Math.random() > 0.3 ? 'movie' : 'series'
+        }));
+      };
+
+      const INITIAL_CATEGORIES = [
+        { title: 'Trending Now', movies: generateMockMovies('trend', 8) },
+        { title: 'Top Rated for You', movies: generateMockMovies('top', 8) },
+        { title: 'Sci-Fi Thrillers', movies: generateMockMovies('scifi', 8) },
+        { title: 'Award-Winning Dramas', movies: generateMockMovies('drama', 8) },
+        { title: 'Comedies', movies: generateMockMovies('comedy', 8) },
+      ];
+
+      // --- COMPONENTS ---
+
+      // Profile Gate
+      const ProfileGate = ({ onSelect }) => {
+        const profiles = [
+          { id: 1, name: 'Hari', color: 'bg-blue-600' },
+          { id: 2, name: 'Kids', color: 'bg-yellow-500' },
+          { id: 3, name: 'Guest', color: 'bg-gray-500' },
+          { id: 4, name: 'Add Profile', color: 'bg-transparent border-2 border-gray-500', isAdd: true },
+        ];
+
+        return (
+          <div className="fixed inset-0 z-[100] bg-[#141414] flex flex-col items-center justify-center animate-fade-in">
+            <h1 className="text-3xl md:text-5xl text-white font-medium mb-8 md:mb-12">Who's watching?</h1>
+            <div className="flex flex-wrap justify-center gap-4 md:gap-8 px-4">
+              {profiles.map((profile) => (
+                <div 
+                  key={profile.id} 
+                  className="group flex flex-col items-center cursor-pointer"
+                  onClick={() => !profile.isAdd && onSelect(profile.name)}
+                >
+                  <div className={`w-24 h-24 md:w-32 md:h-32 rounded-md ${profile.color} flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-white transition-all duration-200`}>
+                    {profile.isAdd ? (
+                      <PlusCircle className="w-12 h-12 text-gray-500 group-hover:text-white" />
+                    ) : (
+                      <User className="w-12 h-12 text-white/80" />
+                    )}
+                  </div>
+                  <span className="mt-4 text-gray-400 text-lg md:text-xl group-hover:text-white transition-colors">
+                    {profile.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <button className="mt-16 border border-gray-500 text-gray-400 px-6 py-2 tracking-widest hover:text-white hover:border-white transition text-sm md:text-lg uppercase">
+              Manage Profiles
+            </button>
+          </div>
+        );
+      };
+
+      // Navbar
+      const Navbar = ({ setViewState, onSearch, onOpenAddMovie, activeCategory, onCategoryChange, notifications }) => {
+        const [isScrolled, setIsScrolled] = useState(false);
+        const [showSearchInput, setShowSearchInput] = useState(false);
+        const [searchQuery, setSearchQuery] = useState('');
+        const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+        useEffect(() => {
+          const handleScroll = () => {
+            setIsScrolled(window.scrollY > 0);
+          };
+          window.addEventListener('scroll', handleScroll);
+          return () => window.removeEventListener('scroll', handleScroll);
+        }, []);
+
+        const handleSearchSubmit = (e) => {
+          e.preventDefault();
+          if (searchQuery.trim()) {
+            onSearch(searchQuery);
+            setIsMobileMenuOpen(false);
+            setShowSearchInput(false);
+          }
+        };
+
+        const navLinks = [
+          { name: 'Home', action: () => { setViewState(ViewState.HOME); onCategoryChange('Home'); } },
+          { name: 'TV Shows', action: () => { setViewState(ViewState.HOME); onCategoryChange('TV Shows'); } },
+          { name: 'Movies', action: () => { setViewState(ViewState.HOME); onCategoryChange('Movies'); } },
+          { name: 'New & Popular', action: () => { setViewState(ViewState.HOME); onCategoryChange('New & Popular'); } },
+          { name: 'My List', action: () => { setViewState(ViewState.HOME); onCategoryChange('My List'); } },
+        ];
+
+        return (
+          <nav className={`fixed w-full z-50 transition-all duration-500 ${isScrolled || isMobileMenuOpen ? 'bg-netflixDark shadow-lg' : 'bg-gradient-to-b from-black via-black/80 to-transparent'}`}>
+            <div className="px-4 md:px-12 py-3 md:py-4 flex items-center justify-between">
+              <div className="flex items-center space-x-4 md:space-x-8">
+                  <button className="md:hidden text-white hover:text-gray-300 transition" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+                      {isMobileMenuOpen ? <X className="w-6 h-6"/> : <Menu className="w-6 h-6"/>}
+                  </button>
+
+                <button 
+                  onClick={() => {
+                      setViewState(ViewState.HOME);
+                      onCategoryChange('Home');
+                      setIsMobileMenuOpen(false);
+                  }}
+                  className="text-netflixRed text-2xl md:text-3xl font-bold cursor-pointer tracking-tighter"
+                >
+                  ANYMOVIE
+                </button>
+                
+                <ul className="hidden md:flex space-x-5 text-sm font-medium text-gray-300">
+                  {navLinks.map((link) => (
+                      <li 
+                        key={link.name} 
+                        onClick={link.action} 
+                        className={`hover:text-white cursor-pointer transition duration-300 ${activeCategory === link.name ? 'text-white font-bold' : ''}`}
+                      >
+                          {link.name}
+                      </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="flex items-center space-x-2 md:space-x-5 text-white">
+                <div className="flex items-center">
+                   <form onSubmit={handleSearchSubmit} className={`flex items-center transition-all duration-300 ${showSearchInput ? 'bg-black/80 border border-white' : 'bg-transparent border border-transparent'} px-2 py-1`}>
+                      <button 
+                          type="button"
+                          onClick={() => {
+                              if(showSearchInput && searchQuery) {
+                                  handleSearchSubmit({preventDefault: ()=>{}});
+                              } else {
+                                  setShowSearchInput(!showSearchInput);
+                              }
+                          }}
+                      >
+                          <Search className="w-5 h-5 cursor-pointer" />
+                      </button>
+                      <input 
+                          type="text" 
+                          placeholder="Search titles, genres..." 
+                          className={`bg-transparent text-white text-sm ml-2 outline-none transition-all duration-300 placeholder-gray-400 ${showSearchInput ? 'w-40 md:w-64 opacity-100' : 'w-0 opacity-0'}`}
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                   </form>
+                </div>
+                
+                 <button 
+                  onClick={onOpenAddMovie}
+                  className="text-white hover:text-gray-300 transition"
+                  title="Add Custom Movie"
+                 >
+                  <PlusCircle className="w-6 h-6" />
+                 </button>
+
+                <span className="text-sm cursor-pointer hover:text-gray-300 hidden md:block font-medium">Kids</span>
+                
+                {/* Notifications */}
+                <div className="relative group">
+                    <Bell className="w-5 h-5 cursor-pointer hover:text-gray-300" />
+                    <div className="absolute right-0 top-full mt-2 w-72 bg-black/90 border border-gray-800 rounded shadow-xl opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200 max-h-64 overflow-y-auto z-50">
+                        <div className="p-2 border-b border-gray-800 text-sm text-gray-400 font-bold">Notifications</div>
+                        {notifications.length > 0 ? (
+                            notifications.map((notif, i) => (
+                                <div key={i} className="flex items-center p-3 hover:bg-gray-800 border-b border-gray-800 last:border-0 cursor-pointer">
+                                    <div className="w-16 h-9 flex-shrink-0 mr-3">
+                                        <img src={notif.thumbnailUrl} className="w-full h-full object-cover rounded" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-300 line-clamp-2">New Arrival: {notif.title}</p>
+                                        <p className="text-[10px] text-gray-500 mt-1">Just now</p>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="p-4 text-center text-gray-500 text-xs">No new notifications</div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex items-center cursor-pointer group relative">
+                  <div className="w-8 h-8 rounded bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center shadow-md">
+                      <User className="w-5 h-5" />
+                  </div>
+                  <div className="ml-2 w-0 h-0 border-l-[5px] border-l-transparent border-t-[5px] border-t-white border-r-[5px] border-r-transparent group-hover:rotate-180 transition-transform hidden md:block"></div>
+                  
+                  {/* Account Dropdown */}
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-black/95 border border-gray-800 rounded shadow-xl opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200 z-50">
+                     <ul className="py-2 text-sm text-gray-300">
+                        <li className="px-4 py-2 hover:underline hover:text-white">Manage Profiles</li>
+                        <li className="px-4 py-2 hover:underline hover:text-white">Account</li>
+                        <li className="px-4 py-2 hover:underline hover:text-white">Help Center</li>
+                        <li className="border-t border-gray-700 my-1"></li>
+                        <li className="px-4 py-2 hover:underline hover:text-white" onClick={() => setViewState(ViewState.PROFILES)}>Sign out of Netflix</li>
+                     </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className={`md:hidden bg-netflixDark/95 backdrop-blur-sm absolute top-16 left-0 w-full border-t border-gray-800 transition-all duration-300 overflow-hidden ${isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                  <ul className="flex flex-col p-6 space-y-4 text-gray-300 text-sm font-semibold text-center">
+                      {navLinks.map((link) => (
+                          <li 
+                              key={link.name} 
+                              onClick={() => {
+                                  link.action();
+                                  setIsMobileMenuOpen(false);
+                              }}
+                              className={`hover:text-white cursor-pointer py-2 border-b border-gray-700 last:border-0 ${activeCategory === link.name ? 'text-white' : ''}`}
+                          >
+                              {link.name}
+                          </li>
+                      ))}
+                  </ul>
+              </div>
+          </nav>
+        );
+      };
+
+      // Hero
+      const Hero = ({ movie, onPlay, onToggleMyList, isInMyList }) => {
+        return (
+          <div className="relative w-full h-[75vh] md:h-[85vh] text-white overflow-hidden">
+            <div className="absolute inset-0 w-full h-full">
+              <img 
+                src={movie.thumbnailUrl} 
+                alt={movie.title}
+                className="w-full h-full object-cover object-center"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-48 md:h-96 bg-gradient-to-t from-[#141414] via-[#141414]/60 to-transparent"></div>
+            </div>
+
+            <div className="absolute top-[20%] md:top-[30%] left-4 md:left-12 max-w-[95%] md:max-w-2xl space-y-3 md:space-y-6 animate-fade-in-up z-10">
+              <h1 className="text-3xl md:text-6xl lg:text-7xl font-extrabold drop-shadow-2xl leading-tight tracking-tight">
+                  {movie.title}
+              </h1>
+              
+              <div className="flex items-center space-x-2 md:space-x-4 text-xs md:text-lg font-semibold text-green-400 drop-shadow-md">
+                  <span>{movie.matchScore}% Match</span>
+                  <span className="text-gray-300">{movie.year}</span>
+                  <span className="border border-gray-400 text-gray-200 px-1 rounded-sm text-[10px] md:text-sm">{movie.rating}</span>
+                  <span className="text-gray-300">{movie.duration}</span>
+              </div>
+
+              <p className="text-sm md:text-lg lg:text-xl text-gray-100 drop-shadow-lg line-clamp-3 md:line-clamp-4 max-w-sm md:max-w-lg leading-snug font-medium">
+                {movie.description}
+              </p>
+              
+              <div className="flex space-x-3 pt-1 md:pt-2">
+                <button 
+                  onClick={onPlay}
+                  className="flex items-center px-4 py-1.5 md:px-7 md:py-3 bg-white text-black rounded hover:bg-gray-200 transition duration-200 font-bold text-sm md:text-xl cursor-pointer shadow-lg"
+                >
+                  <Play className="w-4 h-4 md:w-7 md:h-7 mr-2 fill-black" />
+                  Play
+                </button>
+                <button className="flex items-center px-4 py-1.5 md:px-7 md:py-3 bg-gray-500/70 text-white rounded hover:bg-gray-500/50 transition duration-200 font-bold text-sm md:text-xl cursor-pointer backdrop-blur-sm shadow-lg">
+                  <Info className="w-4 h-4 md:w-7 md:h-7 mr-2" />
+                  More Info
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // Movie Card
+      const MovieCard = ({ movie, onClick, onToggleMyList, isInMyList }) => {
+        return (
+          <div 
+            className="group relative bg-[#181818] rounded-md cursor-pointer transition-all duration-300 ease-in-out hover:z-50 md:hover:scale-110 shadow-lg flex-none w-[140px] md:w-[240px]"
+            onClick={() => onClick(movie)}
+          >
+            <div className="relative aspect-video w-full overflow-hidden rounded-md">
+              <img 
+                src={movie.thumbnailUrl}
+                alt={movie.title}
+                className="object-cover w-full h-full rounded-md transition-all duration-300 group-hover:brightness-110"
+                loading="lazy"
+              />
+              <div className="md:hidden absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/90 to-transparent">
+                  <p className="text-white text-xs font-semibold truncate w-full">{movie.title}</p>
+              </div>
+            </div>
+            
+            <div className="hidden md:block absolute top-full left-0 w-full bg-[#181818] p-3 rounded-b-md shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -mt-1 z-50">
+                  <div className="flex items-center justify-between mb-3">
+                      <div className="flex space-x-2">
+                          <button 
+                            className="w-8 h-8 bg-white rounded-full flex items-center justify-center hover:bg-gray-200 transition"
+                            onClick={(e) => { e.stopPropagation(); onClick(movie); }} 
+                          >
+                              <Play className="w-4 h-4 fill-black text-black" />
+                          </button>
+                          <button 
+                            className="w-8 h-8 border-2 border-gray-400 rounded-full flex items-center justify-center hover:border-white text-white transition"
+                            onClick={(e) => { e.stopPropagation(); onToggleMyList(movie); }}
+                          >
+                              {isInMyList ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                          </button>
+                          <button className="w-8 h-8 border-2 border-gray-400 rounded-full flex items-center justify-center hover:border-white text-white transition">
+                              <ThumbsUp className="w-4 h-4" />
+                          </button>
+                      </div>
+                      <button className="w-8 h-8 border-2 border-gray-400 rounded-full flex items-center justify-center hover:border-white text-white transition ml-auto">
+                          <ChevronDown className="w-4 h-4" />
+                      </button>
+                  </div>
+                  
+                  <div className="flex items-center text-xs text-gray-300 space-x-2 font-semibold mb-1">
+                      <span className="text-green-400">{movie.matchScore}% Match</span>
+                      <span className="border border-gray-500 px-1 text-[10px]">{movie.rating}</span>
+                      <span>{movie.duration}</span>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-1">
+                      {movie.genre.slice(0, 3).map((g, i) => (
+                          <span key={i} className="text-[10px] text-gray-400 flex items-center">
+                              {g}{i < 2 ? <span className="mx-1">•</span> : ''}
+                          </span>
+                      ))}
+                  </div>
+            </div>
+          </div>
+        );
+      };
+
+      // Row
+      const Row = ({ title, movies, onMovieClick, onToggleMyList, myListIds }) => {
+        const rowRef = useRef(null);
+        const [showLeftArrow, setShowLeftArrow] = useState(false);
+        const [showRightArrow, setShowRightArrow] = useState(true);
+
+        const slide = (offset) => {
+          if (rowRef.current) {
+            rowRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+          }
+        };
+
+        const checkScroll = () => {
+          if (rowRef.current) {
+              const { scrollLeft, scrollWidth, clientWidth } = rowRef.current;
+              setShowLeftArrow(scrollLeft > 0);
+              setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
+          }
+        };
+
+        useEffect(() => {
+          checkScroll();
+          window.addEventListener('resize', checkScroll);
+          return () => window.removeEventListener('resize', checkScroll);
+        }, [movies]);
+
+        return (
+          <div className="space-y-2 py-2 md:py-4 relative group z-10">
+            <h2 className="text-white text-lg md:text-2xl font-bold hover:text-gray-300 transition cursor-pointer mb-2 inline-block px-2 md:px-0">
+              {title}
+            </h2>
+            
+            <div className="relative group/row">
+              {showLeftArrow && (
+                  <ChevronLeft 
+                  className="absolute left-0 top-0 bottom-0 z-40 m-auto w-12 h-full bg-black/50 hover:bg-black/70 cursor-pointer text-white hidden md:block opacity-0 group-hover/row:opacity-100 transition-opacity duration-300 p-2" 
+                  onClick={() => slide(-600)}
+                  />
+              )}
+              
+              <div 
+                ref={rowRef}
+                onScroll={checkScroll}
+                className="flex items-start space-x-3 md:space-x-4 overflow-x-auto no-scrollbar scroll-smooth px-2 md:px-0 scroll-snap-x snap-mandatory pb-4"
+                style={{ scrollBehavior: 'smooth' }}
+              >
+                {movies.map((movie) => (
+                  <div key={movie.id} className="snap-start">
+                      <MovieCard 
+                        movie={movie} 
+                        onClick={onMovieClick} 
+                        onToggleMyList={onToggleMyList}
+                        isInMyList={myListIds.has(movie.id)}
+                      />
+                  </div>
+                ))}
+              </div>
+
+              {showRightArrow && (
+                  <ChevronRight 
+                  className="absolute right-0 top-0 bottom-0 z-40 m-auto w-12 h-full bg-black/50 hover:bg-black/70 cursor-pointer text-white hidden md:block opacity-0 group-hover/row:opacity-100 transition-opacity duration-300 p-2"
+                  onClick={() => slide(600)}
+                  />
+              )}
+            </div>
+          </div>
+        );
+      };
+
+      // Modal
+      const Modal = ({ movie, onClose, onPlay, onToggleMyList, isInMyList }) => {
+        if (!movie) return null;
+
+        return (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 overflow-y-auto pt-10 pb-10 px-2 md:px-0">
+              <div 
+                  className="fixed inset-0"
+                  onClick={onClose}
+              ></div>
+              
+            <div className="relative bg-[#181818] w-full max-w-[850px] rounded-lg shadow-2xl overflow-hidden animate-fade-in-up flex flex-col my-auto md:my-0">
+              <button 
+                onClick={onClose}
+                className="absolute top-4 right-4 z-50 w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#181818] flex items-center justify-center hover:bg-white/10"
+              >
+                <X className="text-white w-5 h-5 md:w-6 md:h-6" />
+              </button>
+
+              <div className="relative h-48 md:h-[480px] w-full shrink-0">
+                <img src={movie.thumbnailUrl} alt={movie.title} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#181818] via-transparent to-transparent"></div>
+                
+                <div className="absolute bottom-6 md:bottom-12 left-4 md:left-12 space-y-2 md:space-y-4 right-4">
+                  <h2 className="text-2xl md:text-5xl font-bold text-white leading-tight">{movie.title}</h2>
+                  <div className="flex space-x-2 md:space-x-3">
+                    <button 
+                      onClick={onPlay}
+                      className="flex items-center px-4 md:px-8 py-1.5 md:py-2 bg-white text-black rounded font-bold hover:bg-opacity-80 transition text-sm md:text-base cursor-pointer"
+                    >
+                      <Play className="w-4 h-4 md:w-5 md:h-5 mr-2 fill-black" />
+                      Play
+                    </button>
+                    <button 
+                      onClick={() => onToggleMyList(movie)}
+                      className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-gray-400 hover:border-white transition"
+                    >
+                      {isInMyList ? <X className="w-4 h-4 md:w-5 md:h-5 text-white" /> : <Plus className="w-4 h-4 md:w-5 md:h-5 text-white" />}
+                    </button>
+                    <button className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-gray-400 hover:border-white transition">
+                      <ThumbsUp className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-4 md:px-12 py-6 grid md:grid-cols-3 gap-6 md:gap-8 text-white">
+                  <div className="md:col-span-2 space-y-4">
+                      <div className="flex items-center space-x-3 md:space-x-4 font-semibold text-sm md:text-base flex-wrap">
+                          <span className="text-green-400">{movie.matchScore}% Match</span>
+                          <span>{movie.year}</span>
+                          <span className="border border-gray-500 px-1 text-xs">{movie.rating}</span>
+                          <span>{movie.duration}</span>
+                      </div>
+                      <p className="text-sm md:text-lg leading-relaxed text-gray-200">
+                          {movie.description}
+                      </p>
+                  </div>
+                  
+                  <div className="space-y-4 text-sm">
+                      <div>
+                          <span className="text-gray-500">Genres:</span>
+                          <div className="text-white flex flex-wrap gap-1">
+                              {movie.genre.map((g, i) => (
+                                  <span key={i} className="hover:underline cursor-pointer">
+                                      {g}{i < movie.genre.length - 1 ? ',' : ''}
+                                  </span>
+                              ))}
+                          </div>
+                      </div>
+                      <div>
+                          <span className="text-gray-500">This movie is:</span>
+                          <span className="text-white ml-1">Exciting, Suspenseful</span>
+                      </div>
+                  </div>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // Add Movie Modal
+      const AddMovieModal = ({ onClose, onAdd }) => {
+        const [formData, setFormData] = useState({
+          title: '',
+          description: '',
+          thumbnailUrl: '',
+          videoUrl: '',
+          embedUrl: '',
+          genre: '',
+          type: 'movie'
+        });
+
+        const handleSubmit = (e) => {
+          e.preventDefault();
+          const newMovie = {
+            id: `custom-${Date.now()}`,
+            title: formData.title,
+            description: formData.description,
+            thumbnailUrl: formData.thumbnailUrl || `https://picsum.photos/seed/${formData.title.replace(/\s+/g, '')}/600/400`,
+            videoUrl: formData.videoUrl, 
+            embedUrl: formData.embedUrl,
+            genre: formData.genre.split(',').map(g => g.trim()).filter(g => g),
+            matchScore: 98,
+            year: new Date().getFullYear(),
+            rating: 'NR',
+            duration: 'Unknown',
+            type: formData.type
+          };
+          onAdd(newMovie);
+          onClose();
+        };
+
+        return (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 animate-fade-in">
+            <div className="fixed inset-0" onClick={onClose}></div>
+            <div className="bg-[#181818] w-full max-w-lg rounded-lg p-6 relative z-10 shadow-2xl border border-gray-800 max-h-[90vh] overflow-y-auto">
+              <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white transition">
+                  <X className="w-6 h-6" />
+              </button>
+              
+              <h2 className="text-2xl font-bold mb-6 text-white">Add Movie to My List</h2>
+              
+              <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                      <label className="block text-gray-400 text-sm mb-1">Title</label>
+                      <input 
+                          type="text" required
+                          className="w-full bg-[#333] rounded px-4 py-2 text-white focus:outline-none focus:bg-[#444]"
+                          value={formData.title}
+                          onChange={e => setFormData({...formData, title: e.target.value})}
+                      />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-1">Type</label>
+                    <select 
+                      className="w-full bg-[#333] rounded px-4 py-2 text-white focus:outline-none focus:bg-[#444]"
+                      value={formData.type}
+                      onChange={e => setFormData({...formData, type: e.target.value})}
+                    >
+                      <option value="movie">Movie</option>
+                      <option value="series">TV Show</option>
+                    </select>
+                  </div>
+
+                  <div>
+                      <label className="block text-gray-400 text-sm mb-1">Description</label>
+                      <textarea 
+                          required
+                          className="w-full bg-[#333] rounded px-4 py-2 text-white focus:outline-none focus:bg-[#444] h-20 resize-none"
+                          value={formData.description}
+                          onChange={e => setFormData({...formData, description: e.target.value})}
+                      />
+                  </div>
+
+                  <div>
+                      <label className="block text-gray-400 text-sm mb-1">Thumbnail Image URL</label>
+                      <input 
+                          type="url" 
+                          className="w-full bg-[#333] rounded px-4 py-2 text-white focus:outline-none focus:bg-[#444]"
+                          value={formData.thumbnailUrl}
+                          onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})}
+                      />
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4 mt-2">
+                      <p className="text-white font-bold mb-2">Video Source</p>
+                      <div className="mb-4">
+                          <label className="block text-gray-400 text-sm mb-1">Embed URL (YouTube/Iframe)</label>
+                          <input 
+                              type="url" 
+                              className="w-full bg-[#333] rounded px-4 py-2 text-white focus:outline-none focus:bg-[#444]"
+                              value={formData.embedUrl}
+                              onChange={e => setFormData({...formData, embedUrl: e.target.value})}
+                          />
+                      </div>
+                  </div>
+
+                  <div>
+                      <label className="block text-gray-400 text-sm mb-1">Genres (comma separated)</label>
+                      <input 
+                          type="text" 
+                          className="w-full bg-[#333] rounded px-4 py-2 text-white focus:outline-none focus:bg-[#444]"
+                          value={formData.genre}
+                          onChange={e => setFormData({...formData, genre: e.target.value})}
+                      />
+                  </div>
+
+                  <button type="submit" className="w-full bg-netflixRed hover:bg-red-700 text-white font-bold py-3 rounded mt-2 transition">
+                      Add to My List
+                  </button>
+              </form>
+            </div>
+          </div>
+        );
+      };
+
+      // Player
+      const Player = ({ movie, onBack }) => {
+        return (
+          <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center">
+            <div className="absolute top-0 left-0 w-full p-4 md:p-8 z-50 bg-gradient-to-b from-black/70 to-transparent transition-opacity hover:opacity-100 pointer-events-none">
+              <button onClick={onBack} className="flex items-center text-white cursor-pointer hover:text-gray-300 transition pointer-events-auto">
+                <ArrowLeft className="w-8 h-8 md:w-10 md:h-10 mr-4" />
+                <span className="text-lg md:text-xl font-bold">Back to Browse</span>
+              </button>
+            </div>
+
+            <div className="w-full h-full flex items-center justify-center bg-black">
+              {movie.embedUrl ? (
+                   <iframe
+                      src={movie.embedUrl}
+                      className="w-full h-full border-0"
+                      allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                      allowFullScreen
+                      title={movie.title}
+                   ></iframe>
+              ) : movie.videoUrl ? (
+                   <video 
+                      controls autoPlay 
+                      className="w-full h-full max-h-screen object-contain focus:outline-none"
+                      src={movie.videoUrl}
+                   >
+                      Your browser does not support the video tag.
+                   </video>
+              ) : (
+                  <div className="text-center px-4">
+                      <h2 className="text-white text-2xl md:text-4xl font-bold mb-4">No Video Source Available</h2>
+                      <button onClick={onBack} className="mt-8 px-6 py-2 bg-white text-black font-bold rounded cursor-pointer">Go Back</button>
+                  </div>
+              )}
+            </div>
+          </div>
+        );
+      };
+
+      // --- MAIN APP COMPONENT ---
+      function App() {
+        const [viewState, setViewState] = useState(ViewState.PROFILES);
+        const [selectedProfile, setSelectedProfile] = useState(null);
+        const [selectedMovie, setSelectedMovie] = useState(null);
+        const [playingMovie, setPlayingMovie] = useState(null);
+        const [searchResults, setSearchResults] = useState([]);
+        const [searchQuery, setSearchQuery] = useState('');
+        const [isSearching, setIsSearching] = useState(false);
+        const [activeCategory, setActiveCategory] = useState('Home');
+        const [myListIds, setMyListIds] = useState(new Set());
+        const [myMovies, setMyMovies] = useState([]); // Custom added movies
+        const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+        // Load data from LocalStorage
+        useEffect(() => {
+          const savedList = localStorage.getItem('myList');
+          if (savedList) {
+            setMyListIds(new Set(JSON.parse(savedList)));
+          }
+          const savedCustomMovies = localStorage.getItem('customMovies');
+          if (savedCustomMovies) {
+            setMyMovies(JSON.parse(savedCustomMovies));
+          }
+        }, []);
+
+        const toggleMyList = (movie) => {
+          const newSet = new Set(myListIds);
+          if (newSet.has(movie.id)) {
+            newSet.delete(movie.id);
+          } else {
+            newSet.add(movie.id);
+          }
+          setMyListIds(newSet);
+          localStorage.setItem('myList', JSON.stringify(Array.from(newSet)));
+        };
+
+        const handleAddCustomMovie = (movie) => {
+          const newCustomMovies = [movie, ...myMovies];
+          setMyMovies(newCustomMovies);
+          localStorage.setItem('customMovies', JSON.stringify(newCustomMovies));
+          // Auto add to My List as well
+          const newSet = new Set(myListIds);
+          newSet.add(movie.id);
+          setMyListIds(newSet);
+          localStorage.setItem('myList', JSON.stringify(Array.from(newSet)));
+        };
+
+        const handleSearch = (query) => {
+          setSearchQuery(query);
+          setViewState(ViewState.SEARCH);
+          setIsSearching(true);
+          setSearchResults([]); 
+
+          setTimeout(() => {
+              const allMovies = [
+                  MOCK_HERO_MOVIE,
+                  ...INITIAL_CATEGORIES.flatMap(cat => cat.movies),
+                  ...myMovies
+              ];
+              const uniqueMovies = Array.from(new Map(allMovies.map(m => [m.id, m])).values());
+              const results = uniqueMovies.filter(movie => {
+                  const lowerQuery = query.toLowerCase();
+                  return movie.title.toLowerCase().includes(lowerQuery) || 
+                         movie.genre.some(g => g.toLowerCase().includes(lowerQuery));
+              });
+              setSearchResults(results);
+              setIsSearching(false);
+          }, 500);
+        };
+
+        // Filter Content Logic
+        const getFilteredCategories = () => {
+          // Combine standard movies and custom movies for display
+          let categories = [...INITIAL_CATEGORIES];
+          
+          if (activeCategory === 'Movies') {
+             categories = categories.map(cat => ({
+                ...cat,
+                movies: cat.movies.filter(m => m.type !== 'series')
+             })).filter(cat => cat.movies.length > 0);
+          } else if (activeCategory === 'TV Shows') {
+             categories = categories.map(cat => ({
+                ...cat,
+                movies: cat.movies.filter(m => m.type === 'series')
+             })).filter(cat => cat.movies.length > 0);
+          } else if (activeCategory === 'My List') {
+             const allMovies = [...MOCK_HERO_MOVIE, ...INITIAL_CATEGORIES.flatMap(c => c.movies), ...myMovies];
+             const listMovies = allMovies.filter(m => myListIds.has(m.id));
+             // Dedupe
+             const uniqueList = Array.from(new Map(listMovies.map(m => [m.id, m])).values());
+             return [{ title: 'My List', movies: uniqueList }];
+          }
+
+          // If Home or New & Popular, show custom added movies in a specific row if they exist
+          if (myMovies.length > 0 && activeCategory === 'Home') {
+             return [{ title: 'Your Uploads', movies: myMovies }, ...categories];
+          }
+
+          return categories;
+        };
+
+        if (viewState === ViewState.PROFILES) {
+          return <ProfileGate onSelect={(name) => { setSelectedProfile(name); setViewState(ViewState.HOME); }} />;
+        }
+
+        if (viewState === ViewState.PLAYER && playingMovie) {
+          return <Player movie={playingMovie} onBack={() => { setViewState(ViewState.HOME); setPlayingMovie(null); }} />;
+        }
+
+        return (
+          <div className="min-h-screen bg-transparent font-sans pb-10 overflow-x-hidden selection:bg-netflixRed selection:text-white antialiased text-gray-100">
+            <Navbar 
+              setViewState={setViewState} 
+              onSearch={handleSearch} 
+              onOpenAddMovie={() => setIsAddModalOpen(true)}
+              activeCategory={activeCategory}
+              onCategoryChange={setActiveCategory}
+              notifications={myMovies.slice(0, 3)}
+            />
+            
+            {viewState === ViewState.HOME && (
+              <>
+                {/* Hero only shows on Home, Movies, TV Shows, not My List if empty */}
+                {activeCategory !== 'My List' && (
+                   <Hero 
+                    movie={MOCK_HERO_MOVIE} 
+                    onPlay={() => { setPlayingMovie(MOCK_HERO_MOVIE); setViewState(ViewState.PLAYER); }} 
+                    onToggleMyList={toggleMyList}
+                    isInMyList={myListIds.has(MOCK_HERO_MOVIE.id)}
+                   />
+                )}
+                
+                <div className={`relative z-10 space-y-4 md:space-y-8 pb-8 pl-4 md:pl-12 bg-transparent ${activeCategory !== 'My List' ? '-mt-16 md:-mt-16 lg:-mt-24' : 'pt-24'}`}>
+                  {getFilteredCategories().map((category) => (
+                    <Row 
+                      key={category.title} 
+                      title={category.title} 
+                      movies={category.movies} 
+                      onMovieClick={setSelectedMovie}
+                      onToggleMyList={toggleMyList}
+                      myListIds={myListIds}
+                    />
+                  ))}
+                  {getFilteredCategories().length === 0 && activeCategory === 'My List' && (
+                     <div className="text-center mt-20 text-gray-400">Your list is empty.</div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {viewState === ViewState.SEARCH && (
+              <div className="pt-24 px-4 md:px-12 min-h-screen animate-fade-in">
+                  <h2 className="text-xl md:text-3xl text-white mb-6 font-bold truncate">
+                      {isSearching ? `Searching for "${searchQuery}"...` : `Results for: "${searchQuery}"`}
+                  </h2>
+                  {isSearching ? (
+                      <div className="flex flex-col items-center justify-center h-64 text-netflixRed">
+                          <Loader2 className="w-12 h-12 animate-spin mb-4" />
+                      </div>
+                  ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+                          {searchResults.map((movie) => (
+                              <MovieCard 
+                                key={movie.id} 
+                                movie={movie} 
+                                onClick={setSelectedMovie} 
+                                onToggleMyList={toggleMyList}
+                                isInMyList={myListIds.has(movie.id)}
+                              />
+                          ))}
+                      </div>
+                  )}
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="px-4 md:px-12 mt-20 text-gray-500 text-sm pb-8 text-center border-t border-gray-800 pt-8 bg-black/40 backdrop-blur-sm">
+              <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 text-left text-xs mb-8">
+                  <div className="space-y-2"><p>Audio Description</p><p>Investor Relations</p><p>Legal Notices</p></div>
+                  <div className="space-y-2"><p>Help Center</p><p>Jobs</p><p>Cookie Preferences</p></div>
+                   <div className="space-y-2"><p>Gift Cards</p><p>Terms of Use</p><p>Corporate Information</p></div>
+                   <div className="space-y-2"><p>Media Center</p><p>Privacy</p><p>Contact Us</p></div>
+              </div>
+              <p className="text-xs">Created by Hari Chaulagain</p>
+            </div>
+
+            <Modal 
+              movie={selectedMovie} 
+              onClose={() => setSelectedMovie(null)} 
+              onPlay={() => { setPlayingMovie(selectedMovie); setViewState(ViewState.PLAYER); setSelectedMovie(null); }}
+              onToggleMyList={toggleMyList}
+              isInMyList={selectedMovie ? myListIds.has(selectedMovie.id) : false}
+            />
+            
+            {isAddModalOpen && (
+              <AddMovieModal onClose={() => setIsAddModalOpen(false)} onAdd={handleAddCustomMovie} />
+            )}
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
   </body>
 </html>

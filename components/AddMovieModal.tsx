@@ -20,13 +20,22 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({ onClose, onAdd }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // SMART EXTRACTION: If user pasted a full <iframe src="..."> code, extract just the URL
+    let finalEmbedUrl = formData.embedUrl;
+    // Regex handles src="...", src='...', or even unquoted src=...
+    const iframeMatch = finalEmbedUrl.match(/src=["']?([^"'\s>]+)["']?/i);
+    if (iframeMatch) {
+      finalEmbedUrl = iframeMatch[1];
+    }
+
     const newMovie: Movie = {
       id: `custom-${Date.now()}`,
       title: formData.title,
       description: formData.description,
       thumbnailUrl: formData.thumbnailUrl || `https://picsum.photos/seed/${formData.title.replace(/\s+/g, '')}/600/400`,
       videoUrl: formData.videoUrl, 
-      embedUrl: formData.embedUrl, // Save the custom embed URL
+      embedUrl: finalEmbedUrl, // Save the extracted or raw custom embed URL
       genre: formData.genre.split(',').map(g => g.trim()).filter(g => g),
       matchScore: 98,
       year: new Date().getFullYear(),
@@ -94,9 +103,9 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({ onClose, onAdd }) => {
                 <div className="mb-4">
                     <label className="block text-gray-400 text-sm mb-1">Option A: Embed Code / URL</label>
                     <input 
-                        type="url" 
+                        type="text" 
                         className="w-full bg-[#333] rounded px-4 py-2 text-white focus:outline-none focus:bg-[#444]"
-                        placeholder="https://www.youtube.com/embed/..."
+                        placeholder="Paste Link or <iframe src=...>"
                         value={formData.embedUrl}
                         onChange={e => setFormData({...formData, embedUrl: e.target.value})}
                     />

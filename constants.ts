@@ -1,4 +1,5 @@
 
+
 import { Movie, Category } from './types.ts';
 
 // Helper to generate a consistent image URL
@@ -37,7 +38,121 @@ const generateMockMovies = (category: string, count: number): Movie[] => {
 };
 
 export const INITIAL_CATEGORIES: Category[] = [
-  { title: 'Trending Now', movies: generateMockMovies('trend', 8) },
+  { 
+      title: 'Trending Now', 
+      movies: [
+        {
+            id: 'stranger-things-embed',
+            title: 'Stranger Things',
+            description: 'When a young boy disappears, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces, and one strange little girl.',
+            thumbnailUrl: 'https://picsum.photos/seed/strangerthings/600/400',
+            embedUrl: 'https://dintezuvio.com/embed/hpow0ir439f7',
+            genre: ['Sci-Fi', 'Horror', 'Drama'],
+            matchScore: 99,
+            year: 2016,
+            rating: 'TV-14',
+            duration: 'Series'
+        },
+        {
+            id: 'predator-badlands-2025',
+            title: 'Predator: Badlands',
+            description: 'A new chapter in the Predator saga, set in a futuristic wasteland where survival is the only option.',
+            thumbnailUrl: 'https://picsum.photos/seed/predatorbadlands/600/400',
+            embedUrl: 'https://dintezuvio.com/embed/3searyff87wf',
+            genre: ['Sci-Fi', 'Action'],
+            matchScore: 97,
+            year: 2025,
+            rating: 'R',
+            duration: 'Feature'
+        },
+        {
+            id: 'last-samurai-standing',
+            title: 'Last Samurai Standing',
+            description: 'In a battle for honor and survival, the last warriors of a dying era face their greatest challenge yet.',
+            thumbnailUrl: 'https://picsum.photos/seed/lastsamurai/600/400',
+            embedUrl: 'https://dintezuvio.com/embed/0b982ger5u0n',
+            genre: ['Action', 'History', 'Drama'],
+            matchScore: 94,
+            year: 2024,
+            rating: 'TV-MA',
+            duration: 'Season 1'
+        },
+        {
+            id: 'aaryan-2025',
+            title: 'Aaryan',
+            description: 'An intense action thriller following a man on a quest for vengeance against a corrupt system.',
+            thumbnailUrl: 'https://picsum.photos/seed/aaryan/600/400',
+            embedUrl: 'https://dintezuvio.com/embed/8tqmb10ekaap',
+            genre: ['Action', 'Thriller'],
+            matchScore: 91,
+            year: 2025,
+            rating: 'NR',
+            duration: 'Feature'
+        },
+        {
+            id: 'primitive-war-2025',
+            title: 'Primitive War',
+            description: 'A rescue team in the Vietnam War encounters prehistoric horrors in the jungle.',
+            thumbnailUrl: 'https://picsum.photos/seed/primitivewar/600/400',
+            embedUrl: 'https://dintezuvio.com/embed/iyjhbog3hoqr',
+            genre: ['Sci-Fi', 'Action'],
+            matchScore: 98,
+            year: 2025,
+            rating: 'R',
+            duration: 'Feature'
+        },
+        {
+            id: 'dracula-love-tale',
+            title: 'Dracula: A Love Tale',
+            description: 'A fresh take on the legendary vampire story, exploring eternal love and darkness.',
+            thumbnailUrl: 'https://picsum.photos/seed/draculalove/600/400',
+            embedUrl: 'https://dintezuvio.com/embed/eqlwrgc8udk3',
+            genre: ['Romance', 'Horror'],
+            matchScore: 95,
+            year: 2024,
+            rating: 'TV-MA',
+            duration: 'Feature'
+        },
+        {
+            id: 'troll-1-embed',
+            title: 'Troll',
+            description: 'A wicked troll king in search of a mystical ring that will return him to his human form invades a San Francisco apartment complex.',
+            thumbnailUrl: 'https://picsum.photos/seed/troll1/600/400',
+            embedUrl: 'https://dintezuvio.com/embed/zmi9qnwhqic7',
+            genre: ['Fantasy', 'Horror'],
+            matchScore: 88,
+            year: 1986,
+            rating: 'PG-13',
+            duration: '1h 22m'
+        },
+        {
+            id: 'troll-2-embed',
+            title: 'Troll 2',
+            description: 'A family vacationing in a small town discovers the entire population is actually goblins in disguise who plan to eat them.',
+            thumbnailUrl: 'https://picsum.photos/seed/troll2/600/400',
+            embedUrl: 'https://dintezuvio.com/embed/la96qke5mit5',
+            genre: ['Horror', 'Comedy'],
+            matchScore: 92,
+            year: 1990,
+            rating: 'PG-13',
+            duration: '1h 35m'
+        },
+        {
+            id: 'pushpa-2-yt',
+            title: 'Pushpa 2: The Rule',
+            description: 'Pushpa 2: The Rule is an upcoming Indian Telugu-language action drama film written and directed by Sukumar.',
+            thumbnailUrl: 'https://img.youtube.com/vi/uttNRhknNiY/maxresdefault.jpg',
+            // Updated embed URL
+            embedUrl: 'https://www.youtube-nocookie.com/embed/uttNRhknNiY?si=okxPEGJur2ueH7m3',
+            genre: ['Action', 'Drama'],
+            matchScore: 99,
+            year: 2024,
+            rating: 'UA',
+            duration: 'Trailer'
+        },
+        ...generateMockMovies('trend', 5)
+      ]
+  },
   { title: 'Top Rated for You', movies: generateMockMovies('top', 8) },
   { title: 'Sci-Fi Thrillers', movies: generateMockMovies('scifi', 8) },
   { title: 'Award-Winning Dramas', movies: generateMockMovies('drama', 8) },
